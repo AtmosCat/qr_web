@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       // title: '내일배움캠프 QR 출결 시뮬레이터',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
       home: HomePage(),
