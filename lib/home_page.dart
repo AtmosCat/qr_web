@@ -375,6 +375,8 @@ class _HomePageState extends State<HomePage> {
                               if (!leaveRecordValidList.contains(false)) {
                                 isLeaveReturnTimeValid = true;
                               }
+                            } else {
+                              isLeaveReturnTimeValid = true;
                             }
 
                             if (isCheckinTimeValid &&
