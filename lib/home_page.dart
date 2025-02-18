@@ -26,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   var selectedCheckoutTime = TimeOfDay(hour: 21, minute: 00);
 
   List<String> calculationResult = ["시뮬레이션을 실행하세요."];
+  int calculationCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +116,7 @@ class _HomePageState extends State<HomePage> {
                                 controller:
                                     leaveRecords[index].leaveTimeController,
                                 decoration: InputDecoration(
+                                    labelText: "시간을 입력하세요.",
                                     border: OutlineInputBorder(),
                                     labelStyle: TextStyle(color: Colors.grey),
                                     focusedBorder: OutlineInputBorder(
@@ -153,6 +155,7 @@ class _HomePageState extends State<HomePage> {
                                 controller:
                                     leaveRecords[index].returnTimeController,
                                 decoration: InputDecoration(
+                                    labelText: "시간을 입력하세요.",
                                     border: OutlineInputBorder(),
                                     labelStyle: TextStyle(color: Colors.grey),
                                     focusedBorder: OutlineInputBorder(
@@ -192,42 +195,122 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.all<Color>(Colors.grey),
-                            foregroundColor:
-                                MaterialStateProperty.all<Color>(Colors.white),
-                            shape: MaterialStateProperty.all<
-                                RoundedRectangleBorder>(
-                              RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ButtonStyle(
+                                backgroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.grey[600]!),
+                                foregroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.white),
+                                shape: MaterialStateProperty.all<
+                                    RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                ),
+                              ),
+                              onPressed: () async {
+                                // 외출 내역 추가
+                                final newLeaveRecord = LeaveRecord(
+                                  leaveTimeController: TextEditingController(),
+                                  returnTimeController: TextEditingController(),
+                                  selectedLeaveTime:
+                                      TimeOfDay(hour: 00, minute: 00),
+                                  selectedReturnTime:
+                                      TimeOfDay(hour: 00, minute: 00),
+                                );
+
+                                setState(() {
+                                  leaveRecords.add(newLeaveRecord); // 외출 내역 추가
+                                });
+                              },
+                              child: Text(
+                                "외출 내역 추가",
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.white),
                               ),
                             ),
                           ),
-                          onPressed: () async {
-                            // 외출 내역 추가
-                            final newLeaveRecord = LeaveRecord(
-                              leaveTimeController: TextEditingController(),
-                              returnTimeController: TextEditingController(),
-                              selectedLeaveTime:
-                                  TimeOfDay(hour: 00, minute: 00),
-                              selectedReturnTime:
-                                  TimeOfDay(hour: 00, minute: 00),
-                            );
-
-                            setState(() {
-                              leaveRecords.add(newLeaveRecord); // 외출 내역 추가
-                            });
-                          },
-                          child: Text(
-                            "외출 내역 추가",
-                            style: TextStyle(fontSize: 14, color: Colors.white),
+                          SizedBox(width: 5),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ButtonStyle(
+                                backgroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.redAccent),
+                                foregroundColor:
+                                    MaterialStateProperty.all<Color>(
+                                        Colors.white),
+                                shape: MaterialStateProperty.all<
+                                    RoundedRectangleBorder>(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (leaveRecords.isEmpty) {
+                                  SnackbarUtil.showSnackBar(
+                                      context, "외출 내역이 없습니다.");
+                                  return;
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      // 외출 내역 삭제 확인 dialog 생성
+                                      return AlertDialog(
+                                        title: Text("외출 내역 삭제"),
+                                        content: Text("가장 마지막 외출 내역을 삭제할까요?"),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text(
+                                              "취소",
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blueAccent,
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                leaveRecords.removeLast();
+                                              });
+                                              Navigator.pop(context);
+                                            },
+                                            child: Text(
+                                              "확인",
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blueAccent,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                              child: Text(
+                                "외출 내역 삭제",
+                                style: TextStyle(
+                                    fontSize: 14, color: Colors.white),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: 5),
                       Expanded(
                         child: ElevatedButton(
                           style: ButtonStyle(
@@ -247,7 +330,7 @@ class _HomePageState extends State<HomePage> {
                             bool isCheckinTimeValid = false;
                             bool isCheckoutTimeValid = false;
                             bool isLeaveReturnTimeValid = false;
-                            
+
                             if (isEarlier(
                                 selectedCheckinTime, minCheckinTime)) {
                               SnackbarUtil.showSnackBar(
@@ -356,6 +439,7 @@ class _HomePageState extends State<HomePage> {
                               }
                               setState(() {
                                 calculationResult = result;
+                                calculationCount += 1;
                               });
                             }
                           },
@@ -370,7 +454,9 @@ class _HomePageState extends State<HomePage> {
                 ),
                 SizedBox(height: 30),
                 Center(
-                    child: Text("결과: $calculationResult",
+                    child: Text(
+                        "$calculationCount번째 시뮬레이션 결과:\n$calculationResult",
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -392,6 +478,7 @@ class _HomePageState extends State<HomePage> {
       readOnly: true, // 직접 입력 방지
       controller: controller,
       decoration: InputDecoration(
+          labelText: "시간을 입력하세요.",
           border: OutlineInputBorder(),
           labelStyle: TextStyle(color: Colors.grey),
           focusedBorder: OutlineInputBorder(
