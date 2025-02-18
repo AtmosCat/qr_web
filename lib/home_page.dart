@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: timePickerTextFormField(
                         checkinTimeController,
-                        initialCheckinTime,
+                        selectedCheckinTime,
                       ),
                     ),
                   ],
@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: timePickerTextFormField(
                         checkoutTimeController,
-                        initialCheckoutTime,
+                        selectedCheckoutTime,
                       ),
                     ),
                   ],
@@ -110,9 +110,35 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             Text('외출 시작: ', style: TextStyle(fontSize: 16)),
                             Expanded(
-                              child: timePickerTextFormField(
-                                leaveRecords[index].leaveTimeController,
-                                TimeOfDay(hour: 00, minute: 00),
+                              child: TextFormField(
+                                readOnly: true, // 직접 입력 방지
+                                controller:
+                                    leaveRecords[index].leaveTimeController,
+                                decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    labelStyle: TextStyle(color: Colors.grey),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Colors.indigoAccent,
+                                          width: 2.0),
+                                    )),
+                                onTap: () async {
+                                  final pickedTime = await showTimePicker(
+                                    initialEntryMode: TimePickerEntryMode.input,
+                                    context: context,
+                                    initialTime:
+                                        leaveRecords[index].selectedLeaveTime,
+                                  );
+                                  setState(() {
+                                    if (pickedTime != null) {
+                                      leaveRecords[index]
+                                          .leaveTimeController
+                                          .text = pickedTime.format(context);
+                                      leaveRecords[index].selectedLeaveTime =
+                                          pickedTime;
+                                    }
+                                  });
+                                },
                               ),
                             ),
                           ],
@@ -122,9 +148,35 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             Text('외출 복귀: ', style: TextStyle(fontSize: 16)),
                             Expanded(
-                              child: timePickerTextFormField(
-                                leaveRecords[index].returnTimeController,
-                                TimeOfDay(hour: 00, minute: 00),
+                              child: TextFormField(
+                                readOnly: true, // 직접 입력 방지
+                                controller:
+                                    leaveRecords[index].returnTimeController,
+                                decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    labelStyle: TextStyle(color: Colors.grey),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Colors.indigoAccent,
+                                          width: 2.0),
+                                    )),
+                                onTap: () async {
+                                  final pickedTime = await showTimePicker(
+                                    initialEntryMode: TimePickerEntryMode.input,
+                                    context: context,
+                                    initialTime:
+                                        leaveRecords[index].selectedReturnTime,
+                                  );
+                                  setState(() {
+                                    if (pickedTime != null) {
+                                      leaveRecords[index]
+                                          .returnTimeController
+                                          .text = pickedTime.format(context);
+                                      leaveRecords[index].selectedReturnTime =
+                                          pickedTime;
+                                    }
+                                  });
+                                },
                               ),
                             ),
                           ],
@@ -156,13 +208,9 @@ class _HomePageState extends State<HomePage> {
                           ),
                           onPressed: () async {
                             // 외출 내역 추가
-                            final leaveTimeController = TextEditingController();
-                            final returnTimeController =
-                                TextEditingController();
-
                             final newLeaveRecord = LeaveRecord(
-                              leaveTimeController: leaveTimeController,
-                              returnTimeController: returnTimeController,
+                              leaveTimeController: TextEditingController(),
+                              returnTimeController: TextEditingController(),
                               selectedLeaveTime:
                                   TimeOfDay(hour: 00, minute: 00),
                               selectedReturnTime:
@@ -196,21 +244,10 @@ class _HomePageState extends State<HomePage> {
                           ),
                           onPressed: () {
                             List<String> result = [];
-                            // var earliestLeaveTime =
-                            //     TimeOfDay(hour: 23, minute: 59);
-                            // var latestReturnTime =
-                            //     TimeOfDay(hour: 06, minute: 00);
-                            // if (leaveRecords.isNotEmpty) {
-                            //   for (var leaveRecord in leaveRecords) {
-                            //     if (isEarlier(leaveRecord.selectedLeaveTime, earliestLeaveTime)) {
-                            //       earliestLeaveTime = leaveRecord.selectedLeaveTime;
-                            //     }
-                            //     if (isLater(leaveRecord.selectedReturnTime, latestReturnTime)) {
-                            //       latestReturnTime = leaveRecord.selectedReturnTime;
-                            //     }
-                            //   }
-                            // }
-
+                            bool isCheckinTimeValid = false;
+                            bool isCheckoutTimeValid = false;
+                            bool isLeaveReturnTimeValid = false;
+                            
                             if (isEarlier(
                                 selectedCheckinTime, minCheckinTime)) {
                               SnackbarUtil.showSnackBar(
@@ -223,28 +260,43 @@ class _HomePageState extends State<HomePage> {
                                 selectedCheckoutTime, selectedCheckinTime)) {
                               SnackbarUtil.showSnackBar(
                                   context, "퇴실 시각은 입실 시각 이후여야 합니다.");
-                            } else if (leaveRecords.isNotEmpty) {
+                            } else {
+                              isCheckinTimeValid = true;
+                              isCheckoutTimeValid = true;
+                            }
+
+                            if (leaveRecords.isNotEmpty) {
+                              List<bool> leaveRecordValidList = [];
                               for (var leaveRecord in leaveRecords) {
                                 if (isLater(leaveRecord.selectedLeaveTime,
                                     leaveRecord.selectedReturnTime)) {
                                   SnackbarUtil.showSnackBar(
                                       context, "외출 시작 시각은 외출 복귀 시각 이전이어야 합니다.");
-                                  break;
+                                  leaveRecordValidList.add(false);
                                 }
                                 if (isEarlier(leaveRecord.selectedLeaveTime,
                                     selectedCheckinTime)) {
                                   SnackbarUtil.showSnackBar(
                                       context, "외출 시작 시각은 입실 시각 이후여야 합니다.");
-                                  break;
+                                  leaveRecordValidList.add(false);
                                 } else if (isLater(
                                     leaveRecord.selectedReturnTime,
                                     selectedCheckoutTime)) {
                                   SnackbarUtil.showSnackBar(
                                       context, "외출 복귀 시각은 퇴실 시각 이전이어야 합니다.");
-                                  break;
+                                  leaveRecordValidList.add(false);
+                                } else {
+                                  continue;
                                 }
                               }
-                            } else {
+                              if (!leaveRecordValidList.contains(false)) {
+                                isLeaveReturnTimeValid = true;
+                              }
+                            }
+
+                            if (isCheckinTimeValid &&
+                                isCheckoutTimeValid &&
+                                isLeaveReturnTimeValid) {
                               // 지각 check
                               if (isLater(
                                   selectedCheckinTime, maxCheckinTime)) {
@@ -302,8 +354,9 @@ class _HomePageState extends State<HomePage> {
                               if (result.isEmpty) {
                                 result = ["출석"];
                               }
-                              calculationResult = result;
-                              setState(() {});
+                              setState(() {
+                                calculationResult = result;
+                              });
                             }
                           },
                           child: Text(
@@ -339,7 +392,6 @@ class _HomePageState extends State<HomePage> {
       readOnly: true, // 직접 입력 방지
       controller: controller,
       decoration: InputDecoration(
-          labelText: "00:00 AM/PM",
           border: OutlineInputBorder(),
           labelStyle: TextStyle(color: Colors.grey),
           focusedBorder: OutlineInputBorder(
@@ -358,8 +410,8 @@ class _HomePageState extends State<HomePage> {
               selectedCheckinTime = pickedTime;
             } else if (controller == checkoutTimeController) {
               selectedCheckoutTime = pickedTime;
-            } 
-           }
+            }
+          }
         });
       },
     );
